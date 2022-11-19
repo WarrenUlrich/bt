@@ -53,14 +53,11 @@ public:
         os << std::string(indent + 2, ' ') << "`--";
       else
         os << std::string(indent + 2, ' ') << "|--";
-      // node.display(os, indent + 4);
 
       if constexpr (requires { node.display(os, indent + 4); }) {
         node.display(os, indent + 4);
       } else {
-        std::stringstream ss;
-        ss << node;
-        os << ss.str() << "\n";
+        os << node << '\n';
       }
       ++idx;
     });
@@ -70,7 +67,7 @@ public:
     node.display(os);
     return os;
   }
-  
+
 private:
   std::tuple<Nodes...> _nodes;
   std::size_t _current_node_index = 0;

@@ -1,7 +1,7 @@
 #include <bt/sequence_node.hpp>
 #include <bt/action_node.hpp>
 #include <bt/selector_node.hpp>
-
+#include <bt/conditional_node.hpp>
 #include <iostream>
 #include <string_view>
 
@@ -32,6 +32,9 @@ auto bhv = bt::make_sequence_node<int>(
       bt::make_action_node<int, std::string_view>("Action6", [](auto& ctx) {
         std::cout << "Action6" << std::endl;
         return bt::status::success;
+      }),
+      bt::make_conditional_node<int, std::string_view>("Conditional1", [](auto& ctx) {
+        return true;
       })
     )
   )

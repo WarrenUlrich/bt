@@ -18,6 +18,7 @@ namespace bt {
       return _predicate(context) ? status::success : status::failure;
     }
     
+    
   private:
     Predicate _predicate;
   };
@@ -44,13 +45,13 @@ namespace bt {
   };
 
   template<typename Context, typename Predicate>
-  constexpr conditional_node<Context, Predicate> make_conditional_node(const Predicate &predicate) {
-    return conditional_node<Context, Predicate>(predicate);
+  constexpr conditional_node<Context, void, Predicate> make_conditional_node(const Predicate &predicate) {
+    return conditional_node<Context, void, Predicate>(predicate);
   }
 
   template<typename Context, typename Predicate>
-  constexpr conditional_node<Context, Predicate> make_conditional_node(Predicate &&predicate) {
-    return conditional_node<Context, Predicate>(std::move(predicate));
+  constexpr conditional_node<Context, void, Predicate> make_conditional_node(Predicate &&predicate) {
+    return conditional_node<Context, void, Predicate>(std::move(predicate));
   }
 
   template<typename Context, typename Identifier, typename Predicate>
