@@ -7,7 +7,7 @@ namespace bt {
   class conditional_node {
   public:
     using context_type = Context;
-    
+
     constexpr conditional_node(const Predicate &predicate) : _predicate(predicate) {}
 
     constexpr conditional_node(Predicate &&predicate) : _predicate(std::move(predicate)) {}
@@ -21,12 +21,12 @@ namespace bt {
   };
   
   template<typename Context, typename Predicate>
-  constexpr conditional_node make_conditional_node(const Predicate &predicate) {
+  constexpr conditional_node<Context, Predicate> make_conditional_node(const Predicate &predicate) {
     return conditional_node<Context, Predicate>(predicate);
   }
 
   template<typename Context, typename Predicate>
-  constexpr conditional_node make_conditional_node(Predicate &&predicate) {
+  constexpr conditional_node<Context, Predicate> make_conditional_node(Predicate &&predicate) {
     return conditional_node<Context, Predicate>(std::move(predicate));
   }
 }
