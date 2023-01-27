@@ -4,16 +4,16 @@
 
 namespace bt {
 template <typename Context, BehaviorNode<Context> Node>
-class retry_node : public Node {
+class repeat_node : public Node {
 public:
   using context_type = Context;
   
   template <typename... Args>
-  constexpr retry_node(std::size_t count, const Args &...args)
+  constexpr repeat_node(std::size_t count, const Args &...args)
       : Node(args...), _count(count) {}
 
   template <typename... Args>
-  constexpr retry_node(std::size_t count, Args &&...args)
+  constexpr repeat_node(std::size_t count, Args &&...args)
       : Node(std::forward<Args>(args)...), _count(count) {}
 
   node_status tick(Node::context_type &ctx) {
@@ -23,15 +23,15 @@ public:
       result = Node::tick(ctx);
       switch (result) {
       case node_status::success:
-        _current_count = 0;
+        ++_current_count;
         break;
       case node_status::failure:
-        ++_current_count;
+        _current_count = 0;
         break;
       }
     } else {
       _current_count = 0;
-      result = node_status::failure;
+      result = node_status::success;
     }
     return result;
   }

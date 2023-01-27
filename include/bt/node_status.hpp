@@ -1,7 +1,7 @@
 #pragma once
 
 namespace bt {
-  enum class status {
+  enum class node_status {
     success,
     failure,
     running

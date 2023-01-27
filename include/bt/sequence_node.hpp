@@ -19,53 +19,25 @@ public:
   constexpr sequence_node(Nodes &&...nodes)
       : _nodes(std::make_tuple(std::move(nodes)...)) {}
 
-  status tick(Context &context) {
-    status result = status::running;
+  node_status tick(Context &context) {
+    node_status result = node_status::running;
 
     meta::visit_at(
         [&](auto &node) {
           result = node.tick(context);
           switch (result) {
-          case status::success:
+          case node_status::success:
             ++_current_node_index;
             if (_current_node_index >= std::tuple_size_v<decltype(_nodes)>)
               _current_node_index = 0;
-
             break;
-          case status::failure:
+          case node_status::failure:
             _current_node_index = 0;
             break;
           }
         },
         _nodes, _current_node_index);
     return result;
-  }
-
-  void display(std::ostream &os, int indent = 0) const {
-    os << "sequence_node\n";
-    auto for_all = [&](auto &&f) {
-      std::apply([&](auto &&...nodes) { (f(nodes), ...); }, _nodes);
-    };
-
-    std::size_t idx = 0;
-    for_all([&](const auto &node) { 
-      if (idx == std::tuple_size_v<decltype(_nodes)> - 1)
-        os << std::string(indent + 2, ' ') << "`--";
-      else
-        os << std::string(indent + 2, ' ') << "|--";
-
-      if constexpr (requires { node.display(os, indent + 4); }) {
-        node.display(os, indent + 4);
-      } else {
-        os << node << '\n';
-      }
-      ++idx;
-    });
-  }
-
-  friend std::ostream &operator<<(std::ostream &os, const sequence_node &node) {
-    node.display(os);
-    return os;
   }
 
 private:
