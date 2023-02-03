@@ -26,4 +26,10 @@ public:
 private:
   Action _action;
 };
+
+template <typename Context, Action<Context> Action>
+action_node<Context, Action> action(Action&& action) {
+  return action_node<Context, Action>(std::move(action));
+}
+
 } // namespace bt

@@ -24,4 +24,10 @@ public:
 private:
   Condition _condition;
 };
+
+template <typename Context, Condition<Context> Condition>
+conditional_node<Context, Condition> conditional(Condition &&condition) {
+  return conditional_node<Context, Condition>(std::move(condition));
+}
+
 } // namespace bt
