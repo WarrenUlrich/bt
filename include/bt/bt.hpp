@@ -8,3 +8,4 @@
 #include <bt/repeat_node.hpp>
 #include <bt/selector_node.hpp>
 #include <bt/sequence_node.hpp>
+#include <bt/node_task.hpp>

@@ -1,32 +1,27 @@
-#pragma once
-
-#include <bt/node_status.hpp>
+#include <bt/behavior_node.hpp>
 
 namespace bt {
-  template<typename Context, typename Predicate>
-  class conditional_node {
-  public:
-    using context_type = Context;
 
-    constexpr conditional_node(const Predicate &predicate) : _predicate(predicate) {}
+template <typename C, typename Context>
+concept Condition = requires(Context context, C condition) {
+                      { condition(context) } -> std::same_as<bool>;
+                    };
 
-    constexpr conditional_node(Predicate &&predicate) : _predicate(std::move(predicate)) {}
+template <typename Context, Condition<Context> Condition>
+class conditional_node {
+public:
+  constexpr conditional_node(Condition &&condition)
+      : _condition(std::move(condition)) {}
 
-    node_status tick(Context &context) const {
-      return _predicate(context) ? node_status::success : node_status::failure;
+  node_task tick(Context &context) {
+    if (_condition(context)) {
+      co_return node_status::success;
+    } else {
+      co_return node_status::failure;
     }
-    
-  private:
-    Predicate _predicate;
-  };
-  
-  template<typename Context, typename Predicate>
-  constexpr conditional_node<Context, Predicate> make_conditional_node(const Predicate &predicate) {
-    return conditional_node<Context, Predicate>(predicate);
   }
 
-  template<typename Context, typename Predicate>
-  constexpr conditional_node<Context, Predicate> make_conditional_node(Predicate &&predicate) {
-    return conditional_node<Context, Predicate>(std::move(predicate));
-  }
-}
+private:
+  Condition _condition;
+};
+} // namespace bt

@@ -7,53 +7,53 @@
 #include <sstream>
 
 #include <bt/behavior_node.hpp>
-#include <bt/meta/meta.hpp>
 
 namespace bt {
 template <typename Context, BehaviorNode<Context>... Nodes>
 class sequence_node {
 public:
-  constexpr sequence_node(const Nodes &...nodes)
-      : _nodes(std::make_tuple(nodes...)) {}
+  constexpr sequence_node(Nodes &&...nodes) : _nodes(std::move(nodes)...) {}
 
-  constexpr sequence_node(Nodes &&...nodes)
-      : _nodes(std::make_tuple(std::move(nodes)...)) {}
+  template <std::size_t I = 0> node_task tick(Context &context) {
+    if constexpr (I < sizeof...(Nodes)) {
+      auto &node = std::get<I>(_nodes);
+      auto task = node.tick(context);
 
-  node_status tick(Context &context) {
-    node_status result = node_status::running;
+      while (true) {
+        auto status = task.tick();
+        switch (status) {
+        case node_status::success: {
+          if constexpr (I < sizeof...(Nodes) - 1)
+            co_yield node_status::running;
 
-    meta::visit_at(
-        [&](auto &node) {
-          result = node.tick(context);
-          switch (result) {
-          case node_status::success:
-            ++_current_node_index;
-            if (_current_node_index >= std::tuple_size_v<decltype(_nodes)>)
-              _current_node_index = 0;
-            break;
-          case node_status::failure:
-            _current_node_index = 0;
-            break;
+          auto next_task = tick<I + 1>(context);
+          while (true) {
+            auto next_status = next_task.tick();
+            if (next_status == node_status::running) {
+              co_yield node_status::running;
+            } else {
+              co_return next_status;
+            }
           }
-        },
-        _nodes, _current_node_index);
-    return result;
+        }
+        case node_status::failure:
+          co_return node_status::failure;
+        case node_status::running:
+          co_yield node_status::running;
+          break;
+        }
+      }
+    } else {
+      co_return node_status::success;
+    }
   }
 
 private:
   std::tuple<Nodes...> _nodes;
-  std::size_t _current_node_index = 0;
 };
 
 template <typename Context, BehaviorNode<Context>... Nodes>
-constexpr sequence_node<Context, Nodes...>
-make_sequence_node(const Nodes &...nodes) {
-  return sequence_node<Context, Nodes...>(nodes...);
-}
-
-template <typename Context, BehaviorNode<Context>... Nodes>
-constexpr sequence_node<Context, Nodes...>
-make_sequence_node(Nodes &&...nodes) {
+sequence_node<Context, Nodes...> sequence(Nodes &&...nodes) {
   return sequence_node<Context, Nodes...>(std::move(nodes)...);
 }
 } // namespace bt

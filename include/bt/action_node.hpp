@@ -1,38 +1,29 @@
-#pragma once
-
-#include <bt/node_status.hpp>
+#include <bt/behavior_node.hpp>
 
 namespace bt {
-  template<typename Func, typename Context>
-  concept Action = requires(Func f, Context ctx) {
-    { f(ctx) } -> std::same_as<node_status>;
-  };
+template <typename A, typename Context>
+concept Action = requires(Context context, A action) {
+                   { action(context) } -> std::same_as<node_task>;
+                 };
 
-  template<typename Context, Action<Context> Func>
-  class action_node {
-  public:
-    using context_type = Context;
-    
-    constexpr action_node(const Func &func) : _func(func) {}
+template <typename Context, Action<Context> Action>
+class action_node {
+public:
+  constexpr action_node(Action&& action) : _action(std::move(action)) {}
 
-    constexpr action_node(Func &&func) : _func(std::move(func)) {}
-
-    node_status tick(Context &context) const {
-      return _func(context);
+  node_task tick(Context &context) {
+    auto task = _action(context);
+    while (true) {
+      auto status = task.tick();
+      if (status == node_status::running) {
+        co_yield node_status::running;
+      } else {
+        co_return status;
+      }
     }
-
-  private:
-    Func _func;
-  };
-
-  template<typename Context, Action<Context> Func>
-  constexpr action_node<Context, Func> make_action_node(const Func &func) {
-    return action_node<Context, Func>(func);
   }
 
-  template<typename Context, Action<Context> Func>
-  constexpr action_node<Context, Func> make_action_node(Func &&func) {
-    return action_node<Context, Func>(std::move(func));
-  }
-
-}
+private:
+  Action _action;
+};
+} // namespace bt
