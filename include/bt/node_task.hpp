@@ -1,6 +1,9 @@
 #pragma once
 
 #include <bt/node_status.hpp>
+#include <coroutine>
+#include <algorithm>
+#include <utility>
 
 namespace bt {
 class node_task {
@@ -17,18 +20,35 @@ public:
 
     void unhandled_exception() const noexcept { std::terminate(); }
 
-    std::suspend_always yield_value(node_status status) noexcept {
-      _status = status;
-      return {};
-    }
-
     void return_value(node_status status) { _status = status; }
 
-    node_status return_value() const { return _status; }
+    node_status return_value() const {
+      return _status;
+    }
 
   private:
-    node_status _status = node_status::success;
-    std::coroutine_handle<> _continuation;
+    node_status _status = node_status::running;
+    std::coroutine_handle<> _awaiter;
+    friend node_task;
+  };
+
+  class awaitable {
+  public:
+    constexpr awaitable() noexcept = default;
+    
+    bool await_ready() const noexcept { return false; }
+
+    void await_suspend(std::coroutine_handle<promise_type> handle) noexcept {
+      handle.promise()._awaiter = _awaiter;
+    }
+
+    node_status await_resume() const noexcept {
+      return _awaiter.promise().return_value();
+    }
+
+  private:
+    node_status _status = node_status::running;
+    std::coroutine_handle<promise_type> _awaiter;
 
     friend node_task;
   };
@@ -63,11 +83,28 @@ public:
   }
 
   node_status tick() {
-    _handle.resume();
-    return _handle.promise().return_value();
+    if (!_handle) 
+      return node_status::success;
+
+    if (_handle.promise()._awaiter) {
+      _handle.promise()._awaiter.resume();
+      if (_handle.promise()._awaiter.done())
+        _handle.promise()._awaiter = nullptr;
+      
+      return _handle.promise().return_value();
+    } else {
+      _handle.resume();
+      return _handle.promise().return_value();
+    }
   }
 
   bool done() const { return !_handle || _handle.done(); }
+
+  awaitable operator co_await() const noexcept {
+    awaitable awaiter;
+    awaiter._awaiter = _handle;
+    return awaiter;
+  }
 
 private:
   handle_type _handle;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bt/behavior_node.hpp>
+#include <bt/behavior_node.hpp>co_await
+#include <bt/yield.hpp>
 
 namespace bt {
 template <typename Context, BehaviorNode<Context>... Nodes>
@@ -22,7 +23,7 @@ public:
         case node_status::failure:
           co_return node_status::failure;
         case node_status::running:
-          co_yield node_status::running;
+          co_await yield();
         }
       }
 

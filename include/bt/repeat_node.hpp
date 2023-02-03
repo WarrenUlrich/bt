@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bt/behavior_node.hpp>
+#include <bt/yield.hpp>
 
 namespace bt {
 template <typename Context, BehaviorNode<Context> Node> 
@@ -15,12 +16,12 @@ public:
       while (true) {
         auto status = task.tick();
         if (status == node_status::running) {
-          co_yield node_status::running;
+          co_await yield();
         } else {
           if (status == node_status::failure)
             co_return node_status::failure;
           else if (i < _count - 1)
-            co_yield node_status::running;
+            co_await yield();
 
           break;
         }

@@ -1,4 +1,5 @@
 #include <bt/behavior_node.hpp>
+#include <bt/yield.hpp>
 
 namespace bt {
 template <typename A, typename Context>
@@ -16,7 +17,7 @@ public:
     while (true) {
       auto status = task.tick();
       if (status == node_status::running) {
-        co_yield node_status::running;
+        co_await yield();
       } else {
         co_return status;
       }

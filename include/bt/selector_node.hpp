@@ -5,6 +5,7 @@
 #include <concepts>
 
 #include <bt/behavior_node.hpp>
+#include <bt/yield.hpp>
 
 namespace bt {
 template <typename Context, BehaviorNode<Context>... Nodes>
@@ -24,7 +25,7 @@ public:
           co_return node_status::success;
         case node_status::failure: {
           if constexpr (I < sizeof...(Nodes) - 1)
-            co_yield node_status::running;
+            co_await yield();
           else
             co_return node_status::failure;
 
@@ -32,14 +33,14 @@ public:
           while (true) {
             auto next_status = next_task.tick();
             if (next_status == node_status::running) {
-              co_yield node_status::running;
+              co_await yield();
             } else {
               co_return next_status;
             }
           }
         }
         case node_status::running:
-          co_yield node_status::running;
+          co_await yield();
         }
       }
     } else {
