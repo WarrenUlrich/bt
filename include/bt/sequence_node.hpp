@@ -1,17 +1,19 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <memory>
 #include <concepts>
+#include <sstream>
 
 #include <bt/behavior_node.hpp>
 #include <bt/yield.hpp>
 
 namespace bt {
 template <typename Context, BehaviorNode<Context>... Nodes>
-class selector_node {
+class sequence_node {
 public:
-  constexpr selector_node(Nodes &&...nodes) : _nodes(std::move(nodes)...) {}
+  constexpr sequence_node(Nodes &&...nodes) : _nodes(std::move(nodes)...) {}
 
   template <std::size_t I = 0> node_task tick(Context &context) {
     if constexpr (I < sizeof...(Nodes)) {
@@ -21,13 +23,9 @@ public:
       while (true) {
         auto status = task.tick();
         switch (status) {
-        case node_status::success:
-          co_return node_status::success;
-        case node_status::failure: {
+        case node_status::success: {
           if constexpr (I < sizeof...(Nodes) - 1)
             co_await yield();
-          else
-            co_return node_status::failure;
 
           auto next_task = tick<I + 1>(context);
           while (true) {
@@ -39,12 +37,15 @@ public:
             }
           }
         }
+        case node_status::failure:
+          co_return node_status::failure;
         case node_status::running:
           co_await yield();
+          break;
         }
       }
     } else {
-      co_return node_status::failure;
+      co_return node_status::success;
     }
   }
 
@@ -53,7 +54,7 @@ private:
 };
 
 template <typename Context, BehaviorNode<Context>... Nodes>
-selector_node<Context, Nodes...> selector(Nodes &&...nodes) {
-  return selector_node<Context, Nodes...>(std::move(nodes)...);
+sequence_node<Context, Nodes...> sequence(Nodes &&...nodes) {
+  return sequence_node<Context, Nodes...>(std::move(nodes)...);
 }
 } // namespace bt

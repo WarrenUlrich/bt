@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bt/behavior_node.hpp>co_await
+#include <bt/behavior_node.hpp>
 #include <bt/yield.hpp>
 
 namespace bt {
