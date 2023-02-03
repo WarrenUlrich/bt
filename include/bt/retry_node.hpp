@@ -4,16 +4,13 @@
 
 namespace bt {
 template <typename Context, BehaviorNode<Context> Node>
-class retry_node : public Node {
+class retry_node {
 public:
-  constexpr retry_node(std::size_t count) : _count(count) {}
-
-  template <typename... Args>
-  constexpr retry_node(std::size_t count, Args &&...args)
-      : Node(std::forward<Args>(args)...), _count(count) {}
+  constexpr retry_node(std::size_t count, Node &&node)
+      : _node(std::move(node)), _count(count) {}
   
   node_task tick(Context &context) {
-    auto task = Node::tick(context);
+    auto task = _node.tick(context);
     
     for (std::size_t i = 0; i < _count; ++i) {
       while (true) {
@@ -36,5 +33,6 @@ public:
 
 private:
   std::size_t _count; 
+  Node _node;
 };
 } // namespace bt

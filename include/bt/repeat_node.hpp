@@ -3,16 +3,15 @@
 #include <bt/behavior_node.hpp>
 
 namespace bt {
-template <typename Context, BehaviorNode<Context> Node>
-class repeat_node : public Node {
+template <typename Context, BehaviorNode<Context> Node> 
+class repeat_node {
 public:
-  template <typename... Args>
-  constexpr repeat_node(std::size_t count, Args &&...args)
-      : Node(std::forward<Args>(args)...), _count(count) {}
+  constexpr repeat_node(std::size_t count, Node &&node)
+      : _node(std::move(node)), _count(count) {}
 
   node_task tick(Context &context) {
     for (std::size_t i = 0; i < _count; ++i) {
-      auto task = Node::tick(context);
+      auto task = _node.tick(context);
       while (true) {
         auto status = task.tick();
         if (status == node_status::running) {
@@ -33,10 +32,11 @@ public:
 
 private:
   std::size_t _count;
+  Node _node;
 };
 
-template <typename Context, BehaviorNode<Context> Node, typename... Args>
-repeat_node<Context, Node> repeat(std::size_t count, Args &&...args) {
-  return repeat_node<Context, Node>(count, std::forward<Args>(args)...);
+template <typename Context, BehaviorNode<Context> Node>
+repeat_node<Context, Node> repeat(std::size_t count, Node &&node) {
+  return repeat_node<Context, Node>(count, std::move(node));
 }
 } // namespace bt
