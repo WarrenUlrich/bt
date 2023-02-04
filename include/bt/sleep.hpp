@@ -32,4 +32,19 @@ namespace bt {
     
     co_return node_status::success;
   }
+
+  template <typename Rep, typename Period, typename Predicate>
+  node_task sleep_until(std::chrono::duration<Rep, Period> duration, Predicate&& predicate) {
+    const auto now = std::chrono::steady_clock::now();
+    const auto end = now + duration;
+
+    while (std::chrono::steady_clock::now() < end) {
+      if (predicate())
+        co_return node_status::success;
+      
+      co_await yield();
+    }
+    
+    co_return node_status::failure;
+  }
 }
